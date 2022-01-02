@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>sensor_converter</name>
+  <version>0.0.0</version>
+  <description>The sensor_converter package</description>
+  <maintainer email="hidaka@todo.todo">hidaka</maintainer>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+</package>
