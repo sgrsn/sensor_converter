@@ -12,12 +12,13 @@ public:
     velodyne_scan_ = node.subscribe("/camera/depth_registered/points", 10, &RealsenseToVelodyne::convert, this);
     
     cloud.fields.clear();
-    cloud.fields.reserve(4);
+    cloud.fields.reserve(fields);
     int offset = 0;
     offset = addPointField(cloud, "x", 1, sensor_msgs::PointField::FLOAT32, offset);
     offset = addPointField(cloud, "y", 1, sensor_msgs::PointField::FLOAT32, offset);
     offset = addPointField(cloud, "z", 1, sensor_msgs::PointField::FLOAT32, offset);
     offset = addPointField(cloud, "intensity", 1, sensor_msgs::PointField::FLOAT32, offset);
+    offset = addPointField(cloud, "ring", 1, sensor_msgs::PointField::UINT16, offset);
     cloud.point_step = offset;
     cloud.row_step = 0 * cloud.point_step;
   }
@@ -26,9 +27,7 @@ public:
   {
     sensor_msgs::PointCloud2 realsense_cloud = *realsense_msg;
     cloud.header.stamp = realsense_msg->header.stamp;
-    //cloud.data.resize(realsense_cloud.data.size());
-    //cloud.data.resize(scan_msg->packets.size() * config_.scans_per_packet * cloud.point_step);
-    cloud.data.resize(realsense_cloud.data.size()/2);
+    cloud.data.resize(realsense_cloud.width * realsense_cloud.height * cloud.point_step );
     cloud.width = realsense_cloud.width;
     cloud.height = realsense_cloud.height;
     cloud.is_dense = static_cast<uint8_t>(true);
@@ -40,23 +39,27 @@ public:
     sensor_msgs::PointCloud2Iterator<float> new_iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
     sensor_msgs::PointCloud2Iterator<float> new_iter_z = sensor_msgs::PointCloud2Iterator<float>(cloud, "z");
     sensor_msgs::PointCloud2Iterator<float> new_iter_i = sensor_msgs::PointCloud2Iterator<float>(cloud, "intensity");
-    //cloud.row_step = init_width * cloud.point_step;
-    //ROS_INFO_STREAM("cloud.row_step: " << cloud.row_step <<  ", cloud.point_step: " << cloud.point_step << "init_width: " << (cloud.row_step/cloud.point_step) );
-   
-    for (int j = 0, k = 0; j < realsense_cloud.data.size() / 32; j++)
+    sensor_msgs::PointCloud2Iterator<uint16_t> new_iter_r = sensor_msgs::PointCloud2Iterator<uint16_t>(cloud, "ring");
+    for (int j = 0, k = 0; j < realsense_cloud.data.size() / 36; j++)
     {
-      *new_iter_x = *iter_x;
-      *new_iter_y = *iter_y;
-      *new_iter_z = *iter_z;
-      *new_iter_i = 100 / ((*iter_x)*(*iter_x) + (*iter_y)*(*iter_y) + (*iter_z)*(*iter_z));
-
+      if(j % 1000 == 0)
+      ROS_INFO_STREAM("j: " << j << ", x: " << *iter_x << ", y: " << *iter_y << ", z: " << *iter_z);
+      if(!(std::isnan(*iter_x) || std::isnan(*iter_y) || std::isnan(*iter_z) ))
+      {
+        *new_iter_x = *iter_x;
+        *new_iter_y = *iter_y;
+        *new_iter_z = *iter_z;
+        *new_iter_i = 100 / ((*iter_x)*(*iter_x) + (*iter_y)*(*iter_y) + (*iter_z)*(*iter_z));
+        *new_iter_r = 1;
+        ++new_iter_x;
+        ++new_iter_y;
+        ++new_iter_z;
+        ++new_iter_i;
+        ++new_iter_r;
+      }
       ++iter_x;
       ++iter_y;
       ++iter_z;
-      ++new_iter_x;
-      ++new_iter_y;
-      ++new_iter_z;
-      ++new_iter_i;
     }
     cloud.header.frame_id = "velodyne";
     output_.publish(cloud);
@@ -64,8 +67,8 @@ public:
 
   ros::Subscriber velodyne_scan_;
   ros::Publisher output_;
-  //sensor_msgs::PointCloud2Iterator<float> iter_intensity;
   sensor_msgs::PointCloud2 cloud;
+  unsigned int fields = 5;
 };
 
 
