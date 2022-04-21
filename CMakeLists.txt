@@ -32,3 +32,10 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
+
+add_executable(rfans_to_velodyne
+  src/rfans_to_velodyne.cpp
+)
+target_link_libraries(rfans_to_velodyne
+  ${catkin_LIBRARIES}
+)
